@@ -54,7 +54,7 @@ npm run dev
 
 5. **Google Agenda (opcional):** no Google Agenda do computador, abra *Configurações*, clique na agenda,
    vá em *Integrar agenda* e copie o **Endereço secreto no formato iCal**. Na Vercel, cadastre a variável
-   `GOOGLE_AGENDA_ICAL_URL` com esse link e faça um *Redeploy*. O link fica só no servidor e só quem está logado vê os compromissos.
+   `GOOGLE_AGENDA_ICAL_URL` com esse link e faça um *Redeploy*. Para juntar mais de uma agenda, cole os links separados por espaço. O link fica só no servidor e só quem está logado vê os compromissos.
 
 Para rodar localmente conectado ao Supabase, copie `.env.example` para `.env.local` e preencha os mesmos valores.
 
