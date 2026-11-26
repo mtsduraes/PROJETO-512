@@ -61,3 +61,10 @@ export function lerValor(texto: string): number {
   const normal = limpo.includes(",") ? limpo.replace(/\./g, "").replace(",", ".") : limpo;
   return Number(normal);
 }
+
+const qtdFmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 });
+
+/** 2.5 -> "2,5" */
+export function quantidade(v: number) {
+  return qtdFmt.format(v);
+}

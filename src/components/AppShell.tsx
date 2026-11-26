@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 import { modoDemo } from "@/lib/supabase";
 import { BotaoTema } from "./BotaoTema";
 
-function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "categorias" }) {
+function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "estoque" | "categorias" }) {
   const comum = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
     <svg viewBox="0 0 24 24" className="size-6" aria-hidden {...comum}>
@@ -27,6 +27,12 @@ function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "categor
           <path d="M8.5 8v5M10.5 8v5M13 8v5M15.5 8v5M8.5 16h7" />
         </>
       )}
+      {nome === "estoque" && (
+        <>
+          <path d="M3.5 8 12 3.5 20.5 8v8L12 20.5 3.5 16z" />
+          <path d="M3.5 8 12 12.5 20.5 8M12 12.5v8" />
+        </>
+      )}
       {nome === "categorias" && (
         <>
           <path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1 1 0 0 1 0 1.4l-7.3 7.3a1 1 0 0 1-1.4 0z" />
@@ -41,6 +47,7 @@ const ABAS = [
   { href: "/", rotulo: "Início", icone: "inicio" },
   { href: "/lancamentos", rotulo: "Lançamentos", icone: "lancamentos" },
   { href: "/boletos", rotulo: "Boletos", icone: "boletos" },
+  { href: "/estoque", rotulo: "Estoque", icone: "estoque" },
   { href: "/categorias", rotulo: "Categorias", icone: "categorias" },
 ] as const;
 
@@ -108,7 +115,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Barra de abas no celular */}
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-linha bg-superficie pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-linha bg-superficie pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {ABAS.map((a) => {
           const ativa = pathname === a.href;
@@ -117,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={a.href}
               href={a.href}
               aria-current={ativa ? "page" : undefined}
-              className={`flex flex-col items-center gap-0.5 pt-2 pb-2.5 text-xs ${ativa ? "font-semibold text-jade-texto" : "text-tinta-suave/80"}`}
+              className={`flex flex-col items-center gap-0.5 pt-2 pb-2.5 text-[11px] ${ativa ? "font-semibold text-jade-texto" : "text-tinta-suave/80"}`}
             >
               <Icone nome={a.icone} />
               {a.rotulo}

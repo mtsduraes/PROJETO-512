@@ -5,7 +5,20 @@
  */
 import { modoDemo, supabase } from "./supabase";
 import { hojeISO, limitesDoMes, mesAtual, somarMes } from "./format";
-import type { Boleto, Categoria, Lancamento, NovoBoleto, NovoLancamento, ResumoMes, ResumoSaldo, Tipo } from "./types";
+import type {
+  Boleto,
+  Categoria,
+  ItemEstoque,
+  Lancamento,
+  MovimentoEstoque,
+  NovoBoleto,
+  NovoItemEstoque,
+  NovoLancamento,
+  NovoMovimento,
+  ResumoMes,
+  ResumoSaldo,
+  Tipo,
+} from "./types";
 
 // ---------------------------------------------------------------------
 // Modo demonstração (localStorage)
@@ -16,6 +29,8 @@ interface BancoDemo {
   categorias: Categoria[];
   lancamentos: Lancamento[];
   boletos?: Boleto[];
+  itens?: ItemEstoque[];
+  movimentos?: MovimentoEstoque[];
 }
 
 function uid() {
@@ -115,15 +130,22 @@ function lerDemo(): BancoDemo {
   const bruto = typeof window !== "undefined" ? localStorage.getItem(CHAVE) : null;
   if (bruto) {
     const b: BancoDemo = JSON.parse(bruto);
+    let mudou = false;
     if (!b.boletos) {
       boletosExemplo(b);
-      salvarDemo(b);
+      mudou = true;
     }
+    if (!b.itens) {
+      estoqueExemplo(b);
+      mudou = true;
+    }
+    if (mudou) salvarDemo(b);
     return b;
   }
   const categorias = CATEGORIAS_INICIAIS.map(([nome, tipo]) => ({ id: uid(), nome, tipo, ativa: true }));
   const banco: BancoDemo = { categorias, lancamentos: exemplos(categorias) };
   boletosExemplo(banco);
+  estoqueExemplo(banco);
   salvarDemo(banco);
   return banco;
 }
@@ -312,4 +334,159 @@ export async function linkDoAnexo(caminho: string): Promise<string | null> {
   const { data, error } = await supabase().storage.from("boletos").createSignedUrl(caminho, 600);
   falhou(error);
   return data?.signedUrl ?? null;
+}
+
+// ---------------------------------------------------------------------
+// Estoque
+// ---------------------------------------------------------------------
+const CAMPOS_ITEM = "id,nome,grupo,unidade,local,minimo,quantidade,custo_medio,validade,ativo";
+const CAMPOS_MOV = "id,item_id,tipo,quantidade,custo_unitario,validade,motivo,data,lancar_no_caixa,lancamento_id,criado_em";
+
+const numItem = (i: ItemEstoque): ItemEstoque => ({ ...i, minimo: Number(i.minimo), quantidade: Number(i.quantidade), custo_medio: Number(i.custo_medio) });
+const numMov = (m: MovimentoEstoque): MovimentoEstoque => ({
+  ...m,
+  quantidade: Number(m.quantidade),
+  custo_unitario: m.custo_unitario === null ? null : Number(m.custo_unitario),
+});
+
+function estoqueExemplo(b: BancoDemo) {
+  b.itens = [];
+  b.movimentos = [];
+  const dia = (delta: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + delta);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const itens: [string, ItemEstoque["grupo"], string, string, number, number, number, number?][] = [
+    // nome, grupo, unidade, local, mínimo, compra, preço, uso
+    ["Farinha de trigo", "Ingredientes", "kg", "Despensa", 10, 25, 4.9, 18],
+    ["Óleo de soja", "Ingredientes", "L", "Despensa", 6, 12, 7.5, 4],
+    ["Frango (peito)", "Ingredientes", "kg", "Freezer", 8, 15, 18.9, 12],
+    ["Creme de leite", "Ingredientes", "un", "Despensa", 12, 24, 3.2, 6],
+    ["Refrigerante 2L", "Bebidas", "un", "Depósito", 24, 48, 7.8, 20],
+    ["Água mineral 500ml", "Bebidas", "fardo", "Depósito", 4, 6, 14.9, 5],
+    ["Guardanapo", "Descartáveis", "pct", "Depósito", 10, 30, 6.5, 8],
+    ["Copo descartável 200ml", "Descartáveis", "cx", "Depósito", 2, 3, 42, 3],
+    ["Detergente", "Limpeza", "un", "Área de serviço", 4, 10, 2.9, 3],
+    ["Toalha de mesa branca", "Material de evento", "un", "Depósito", 20, 30, 0, 0],
+  ];
+  for (const [nome, grupo, unidade, local, minimo, compra, preco, uso] of itens) {
+    const item: ItemEstoque = { id: uid(), nome, grupo, unidade, local, minimo, quantidade: 0, custo_medio: 0, validade: null, ativo: true };
+    b.itens.push(item);
+    const validade = grupo === "Ingredientes" ? dia(nome.startsWith("Creme") ? 5 : 90) : null;
+    b.movimentos.push({ id: uid(), item_id: item.id, tipo: "entrada", quantidade: compra, custo_unitario: preco || null, validade, motivo: "Compra", data: dia(-10), lancar_no_caixa: false, lancamento_id: null, criado_em: new Date().toISOString() });
+    if (uso) b.movimentos.push({ id: uid(), item_id: item.id, tipo: "saida", quantidade: uso, custo_unitario: null, validade: null, motivo: "Eventos da semana", data: dia(-3), lancar_no_caixa: false, lancamento_id: null, criado_em: new Date().toISOString() });
+    recalcularDemo(b, item.id);
+  }
+}
+
+/** Mesma conta que o banco faz: refaz o histórico em ordem. */
+function recalcularDemo(b: BancoDemo, itemId: string) {
+  let qtd = 0;
+  let custo = 0;
+  let val: string | null = null;
+  const movs = b.movimentos!.filter((m) => m.item_id === itemId).sort((x, y) => x.data.localeCompare(y.data) || x.criado_em.localeCompare(y.criado_em));
+  for (const m of movs) {
+    if (m.tipo === "entrada") {
+      if (m.custo_unitario !== null && qtd + m.quantidade > 0) custo = (Math.max(qtd, 0) * custo + m.quantidade * m.custo_unitario) / (Math.max(qtd, 0) + m.quantidade);
+      qtd += m.quantidade;
+      if (m.validade) val = m.validade;
+    } else if (m.tipo === "saida") qtd -= m.quantidade;
+    else qtd = m.quantidade;
+  }
+  b.itens = b.itens!.map((i) => (i.id === itemId ? { ...i, quantidade: Math.round(qtd * 1000) / 1000, custo_medio: custo, validade: qtd > 0 ? val : null } : i));
+}
+
+export async function listarItens(): Promise<ItemEstoque[]> {
+  if (modoDemo) return [...lerDemo().itens!].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const { data, error } = await supabase().from("estoque_itens").select(CAMPOS_ITEM).order("nome");
+  falhou(error);
+  return (data as ItemEstoque[]).map(numItem);
+}
+
+export async function salvarItem(item: NovoItemEstoque & { id?: string }): Promise<string> {
+  if (modoDemo) {
+    const b = lerDemo();
+    let id = item.id;
+    if (id) b.itens = b.itens!.map((x) => (x.id === id ? { ...x, ...item, id: x.id } : x));
+    else {
+      id = uid();
+      b.itens!.push({ ...item, id, quantidade: 0, custo_medio: 0, validade: null });
+    }
+    salvarDemo(b);
+    return id;
+  }
+  const { id, ...campos } = item;
+  if (id) {
+    const { error } = await supabase().from("estoque_itens").update(campos).eq("id", id);
+    falhou(error);
+    return id;
+  }
+  const { data, error } = await supabase().from("estoque_itens").insert(campos).select("id").single();
+  if (error?.code === "23505") throw new Error("Já existe um item com esse nome.");
+  falhou(error);
+  return data!.id as string;
+}
+
+export async function listarMovimentos(itemId: string): Promise<MovimentoEstoque[]> {
+  if (modoDemo) {
+    return lerDemo()
+      .movimentos!.filter((m) => m.item_id === itemId)
+      .sort((x, y) => y.data.localeCompare(x.data) || y.criado_em.localeCompare(x.criado_em));
+  }
+  const { data, error } = await supabase()
+    .from("estoque_movimentos")
+    .select(CAMPOS_MOV)
+    .eq("item_id", itemId)
+    .order("data", { ascending: false })
+    .order("criado_em", { ascending: false })
+    .limit(100);
+  falhou(error);
+  return (data as MovimentoEstoque[]).map(numMov);
+}
+
+export async function registrarMovimento(m: NovoMovimento): Promise<void> {
+  if (modoDemo) {
+    const b = lerDemo();
+    let lancamento_id: string | null = null;
+    const item = b.itens!.find((i) => i.id === m.item_id)!;
+    if (m.tipo === "entrada" && m.lancar_no_caixa && m.custo_unitario) {
+      const nomeCat = item.grupo === "Ingredientes" || item.grupo === "Bebidas" ? item.grupo : item.grupo === "Material de evento" ? "Aluguel de material" : "Outras saídas";
+      lancamento_id = uid();
+      b.lancamentos.push({
+        id: lancamento_id,
+        tipo: "saida",
+        valor: Math.round(m.quantidade * m.custo_unitario * 100) / 100,
+        data: m.data,
+        descricao: `Compra estoque: ${item.nome}${m.motivo ? " - " + m.motivo : ""}`,
+        categoria_id: b.categorias.find((c) => c.tipo === "saida" && c.nome === nomeCat)?.id ?? null,
+        forma_pagamento: "pix",
+        status: "pago",
+      });
+    }
+    b.movimentos!.push({ ...m, id: uid(), lancamento_id, criado_em: new Date().toISOString() });
+    recalcularDemo(b, m.item_id);
+    salvarDemo(b);
+    return;
+  }
+  const { error } = await supabase().from("estoque_movimentos").insert(m);
+  falhou(error);
+}
+
+/** Desfaz uma movimentação. Se ela tinha lançado a compra no caixa, o lançamento também sai. */
+export async function excluirMovimento(m: MovimentoEstoque): Promise<void> {
+  if (modoDemo) {
+    const b = lerDemo();
+    b.movimentos = b.movimentos!.filter((x) => x.id !== m.id);
+    if (m.lancamento_id) b.lancamentos = b.lancamentos.filter((l) => l.id !== m.lancamento_id);
+    recalcularDemo(b, m.item_id);
+    salvarDemo(b);
+    return;
+  }
+  const { error } = await supabase().from("estoque_movimentos").delete().eq("id", m.id);
+  falhou(error);
+  if (m.lancamento_id) {
+    const r = await supabase().from("lancamentos").delete().eq("id", m.lancamento_id);
+    falhou(r.error);
+  }
 }

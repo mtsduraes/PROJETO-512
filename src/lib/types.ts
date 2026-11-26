@@ -73,3 +73,51 @@ export interface Boleto {
 }
 
 export type NovoBoleto = Omit<Boleto, "id">;
+
+export const GRUPOS_ESTOQUE = ["Ingredientes", "Bebidas", "Descartáveis", "Limpeza", "Material de evento", "Outros"] as const;
+export type GrupoEstoque = (typeof GRUPOS_ESTOQUE)[number];
+
+export const UNIDADES: { valor: string; rotulo: string }[] = [
+  { valor: "un", rotulo: "unidade" },
+  { valor: "kg", rotulo: "kg" },
+  { valor: "g", rotulo: "g" },
+  { valor: "L", rotulo: "litro" },
+  { valor: "ml", rotulo: "ml" },
+  { valor: "cx", rotulo: "caixa" },
+  { valor: "pct", rotulo: "pacote" },
+  { valor: "dz", rotulo: "dúzia" },
+  { valor: "fardo", rotulo: "fardo" },
+];
+
+export interface ItemEstoque {
+  id: string;
+  nome: string;
+  grupo: GrupoEstoque;
+  unidade: string;
+  local: string;
+  minimo: number;
+  quantidade: number;
+  custo_medio: number;
+  validade: string | null;
+  ativo: boolean;
+}
+
+export type NovoItemEstoque = Pick<ItemEstoque, "nome" | "grupo" | "unidade" | "local" | "minimo" | "ativo">;
+
+export type TipoMovimento = "entrada" | "saida" | "ajuste";
+
+export interface MovimentoEstoque {
+  id: string;
+  item_id: string;
+  tipo: TipoMovimento;
+  quantidade: number;
+  custo_unitario: number | null;
+  validade: string | null;
+  motivo: string;
+  data: string;
+  lancar_no_caixa: boolean;
+  lancamento_id: string | null;
+  criado_em: string;
+}
+
+export type NovoMovimento = Omit<MovimentoEstoque, "id" | "lancamento_id" | "criado_em">;

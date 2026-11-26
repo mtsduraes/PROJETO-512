@@ -9,8 +9,9 @@ import { BotaoNovo } from "@/components/BotaoNovo";
 import { ItemLancamento } from "@/components/ItemLancamento";
 import { GraficoMensal, BarrasCategoria } from "@/components/Graficos";
 import { useDados } from "@/components/useDados";
-import { listarBoletos, listarCategorias, listarLancamentos, resumoMensal, resumoSaldo } from "@/lib/dados";
+import { listarBoletos, listarItens, listarCategorias, listarLancamentos, resumoMensal, resumoSaldo } from "@/lib/dados";
 import { grupoDo } from "@/lib/prazos";
+import { precisaComprar, validadePerto } from "@/lib/estoque";
 import { dinheiro, mesAtual } from "@/lib/format";
 import type { Lancamento, Tipo } from "@/lib/types";
 
@@ -24,6 +25,7 @@ export default function Inicio() {
   const lancs = useDados(() => listarLancamentos(mes), [mes]);
   // Se a parte de boletos ainda não existir no banco, o Início continua funcionando sem o aviso.
   const boletos = useDados(() => listarBoletos().catch(() => []), []);
+  const estoque = useDados(() => listarItens().catch(() => []), []);
 
   const cats = categorias.dados ?? [];
   const lista = useMemo(() => lancs.dados ?? [], [lancs.dados]);
@@ -64,6 +66,9 @@ export default function Inicio() {
   const vencidos = pendentes.filter((x) => x.g === "vencido");
   const semana = pendentes.filter((x) => x.g === "hoje" || x.g === "semana");
   const total = (xs: typeof pendentes) => xs.reduce((s, x) => s + x.b.valor, 0);
+
+  const paraComprar = (estoque.dados ?? []).filter(precisaComprar).length;
+  const validade = (estoque.dados ?? []).filter((i) => i.ativo && validadePerto(i)).length;
 
   const erro = categorias.erro || saldo.erro || historico.erro || lancs.erro;
   const resultado = resumo.entradas - resumo.saidas;
@@ -113,6 +118,25 @@ export default function Inicio() {
                 {semana.length === 1 ? "1 boleto vence" : `${semana.length} boletos vencem`} nos próximos 7 dias: {dinheiro(total(semana))}
               </span>
             )}
+          </span>
+          <span className="font-medium underline underline-offset-2">Ver</span>
+        </Link>
+      )}
+
+      {/* Aviso de estoque */}
+      {(paraComprar > 0 || validade > 0) && (
+        <Link
+          href="/estoque"
+          className="mt-3 flex items-center gap-3 rounded-xl border border-linha bg-superficie px-4 py-3 text-sm hover:border-ambar"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ambar-claro text-ambar-texto" aria-hidden>
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round">
+              <path d="M3.5 8 12 3.5 20.5 8v8L12 20.5 3.5 16z" />
+            </svg>
+          </span>
+          <span className="flex-1">
+            {paraComprar > 0 && <span className="block font-medium">{paraComprar === 1 ? "1 item" : `${paraComprar} itens`} abaixo do mínimo no estoque</span>}
+            {validade > 0 && <span className="block text-tinta-suave">{validade === 1 ? "1 item vence" : `${validade} itens vencem`} nos próximos 7 dias</span>}
           </span>
           <span className="font-medium underline underline-offset-2">Ver</span>
         </Link>
