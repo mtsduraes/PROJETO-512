@@ -48,6 +48,11 @@ create trigger lancamentos_atualizado_em before update on public.lancamentos
 -- Segurança: só quem está logado vê e mexe nos dados.
 -- (Os usuários são cadastrados manualmente no Supabase, então só a equipe entra.)
 -- ---------------------------------------------------------------------
+-- Permissões explícitas (alguns projetos novos do Supabase não liberam sozinhos).
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.categorias  to authenticated;
+grant select, insert, update, delete on public.lancamentos to authenticated;
+
 alter table public.categorias  enable row level security;
 alter table public.lancamentos enable row level security;
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { hojeISO, lerValor } from "@/lib/format";
 import { salvarLancamento, excluirLancamento } from "@/lib/dados";
@@ -148,6 +149,16 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
               ))}
             </select>
           </label>
+
+          {opcoes.length === 0 && (
+            <p className="rounded-lg bg-ambar-claro px-3 py-2 text-sm text-ambar-texto">
+              Ainda não há categorias de {tipo === "entrada" ? "entrada" : "saída"}. Crie uma na aba{" "}
+              <Link href="/categorias" className="font-medium underline">
+                Categorias
+              </Link>{" "}
+              e volte aqui.
+            </p>
+          )}
 
           <fieldset>
             <legend className="mb-1 text-sm text-tinta-suave">Situação</legend>
