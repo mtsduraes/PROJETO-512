@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthProvider";
 import { modoDemo } from "@/lib/supabase";
+import { BotaoTema } from "./BotaoTema";
 
 function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "categorias" }) {
   const comum = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -47,7 +48,7 @@ export function Marca() {
   return (
     <span className="flex items-center gap-3">
       <span
-        className="font-display grid size-10 place-items-center rounded-full bg-floresta text-[0.95rem] font-bold tracking-tight text-porcelana"
+        className="font-display grid size-10 place-items-center rounded-full bg-floresta text-[0.95rem] font-bold tracking-tight text-papel"
         style={{ fontVariationSettings: '"SOFT" 0, "opsz" 72' }}
         aria-hidden
       >
@@ -77,25 +78,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" aria-label="Caderno de Caixa, início">
             <Marca />
           </Link>
-          <nav className="hidden gap-1 md:flex" aria-label="Principal">
+          <nav className="ml-auto hidden gap-1 md:flex" aria-label="Principal">
             {ABAS.map((a) => (
               <Link
                 key={a.href}
                 href={a.href}
                 aria-current={pathname === a.href ? "page" : undefined}
                 className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  pathname === a.href ? "bg-tinta text-porcelana" : "text-tinta-suave hover:bg-white"
+                  pathname === a.href ? "bg-tinta text-porcelana" : "text-tinta-suave hover:bg-superficie"
                 }`}
               >
                 {a.rotulo}
               </Link>
             ))}
           </nav>
-          {!modoDemo && usuario && (
-            <button onClick={sair} className="text-sm text-tinta-suave underline-offset-2 hover:underline">
-              Sair
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            <BotaoTema />
+            {!modoDemo && usuario && (
+              <button onClick={sair} className="text-sm text-tinta-suave underline-offset-2 hover:underline">
+                Sair
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -104,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Barra de abas no celular */}
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-linha bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-linha bg-superficie pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {ABAS.map((a) => {
           const ativa = pathname === a.href;

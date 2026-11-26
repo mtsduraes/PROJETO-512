@@ -94,14 +94,14 @@ export function FormBoleto({ categorias, fornecedores, inicial, onFechar, onSalv
     }
   }
 
-  const campo = "w-full rounded-lg border border-linha bg-white px-3 py-2.5 focus:border-jade focus:outline-none";
+  const campo = "w-full rounded-lg border border-linha bg-superficie px-3 py-2.5 focus:border-jade focus:outline-none";
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>
       <form
         onSubmit={enviar}
         onClick={(e) => e.stopPropagation()}
-        className="folha max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="folha max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-superficie p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{inicial ? "Editar boleto" : "Novo boleto"}</h2>
@@ -188,15 +188,15 @@ export function FormBoleto({ categorias, fornecedores, inicial, onFechar, onSalv
           </label>
         </div>
 
-        {erro && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{erro}</p>}
+        {erro && <p className="mt-3 rounded-lg bg-erro-claro px-3 py-2 text-sm text-erro">{erro}</p>}
 
         <div className="mt-5 flex gap-2">
           {inicial && (
-            <button type="button" onClick={excluir} disabled={salvando} className="rounded-lg border border-rose-300 px-4 py-3 text-rose-700">
+            <button type="button" onClick={excluir} disabled={salvando} className="rounded-lg border border-erro/40 px-4 py-3 text-erro">
               Excluir
             </button>
           )}
-          <button type="submit" disabled={salvando} className="flex-1 rounded-lg bg-tinta py-3 font-semibold text-white disabled:opacity-60">
+          <button type="submit" disabled={salvando} className="flex-1 rounded-lg bg-tinta py-3 font-semibold text-porcelana disabled:opacity-60">
             {salvando ? "Salvando…" : inicial ? "Salvar boleto" : "Cadastrar boleto"}
           </button>
         </div>

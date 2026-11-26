@@ -21,7 +21,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        {/* Aplica o tema salvo antes de desenhar a tela, para não "piscar" claro ao abrir no escuro. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("tema")||(matchMedia("(prefers-color-scheme: dark)").matches?"escuro":"claro");document.documentElement.dataset.tema=t;}catch(e){}`,
+          }}
+        />
+      </head>
       <body className={`${figtree.variable} ${fraunces.variable} font-sans antialiased`}>
         <AuthProvider>{children}</AuthProvider>
       </body>

@@ -26,7 +26,7 @@ export default function Categorias() {
       <p className="mb-4 text-sm text-tinta-suave">
         Organize de onde vem e para onde vai o dinheiro. Categorias desativadas somem do formulário, mas os lançamentos antigos continuam com elas.
       </p>
-      {(erro || falha) && <p className="mb-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{erro || falha}</p>}
+      {(erro || falha) && <p className="mb-3 rounded-lg bg-erro-claro p-3 text-sm text-erro">{erro || falha}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         {(["entrada", "saida"] as Tipo[]).map((tipo) => (
           <Lista key={tipo} tipo={tipo} itens={(dados ?? []).filter((c) => c.tipo === tipo)} executar={executar} />
@@ -53,7 +53,7 @@ function Lista({ tipo, itens, executar }: { tipo: Tipo; itens: Categoria[]; exec
   }
 
   return (
-    <section className="rounded-xl border border-linha bg-white p-4">
+    <section className="rounded-xl border border-linha bg-superficie p-4">
       <h2 className={`mb-3 font-semibold ${tipo === "entrada" ? "text-jade-texto" : "text-ambar-texto"}`}>
         {tipo === "entrada" ? "↑ Entradas" : "↓ Saídas"}
       </h2>
@@ -79,7 +79,7 @@ function Lista({ tipo, itens, executar }: { tipo: Tipo; itens: Categoria[]; exec
           placeholder="Nova categoria"
           className="min-w-0 flex-1 rounded-lg border border-linha px-3 py-2"
         />
-        <button className="rounded-lg bg-tinta px-4 py-2 font-medium text-white">Adicionar</button>
+        <button className="rounded-lg bg-tinta px-4 py-2 font-medium text-porcelana">Adicionar</button>
       </form>
     </section>
   );

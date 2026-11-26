@@ -70,24 +70,24 @@ export default function Inicio() {
 
   return (
     <AppShell>
-      {erro && <p className="mb-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">Erro ao carregar: {erro}</p>}
+      {erro && <p className="mb-4 rounded-lg bg-erro-claro p-3 text-sm text-erro">Erro ao carregar: {erro}</p>}
 
       {/* Saldo atual: a "comanda" */}
-      <section className="comanda surgir bg-floresta px-5 pt-5 pb-9 text-porcelana md:px-7">
+      <section className="comanda surgir bg-floresta px-5 pt-5 pb-9 text-papel md:px-7">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm text-porcelana/75">Saldo em caixa hoje</p>
-          <p className="text-xs text-porcelana/60 first-letter:uppercase">{hoje}</p>
+          <p className="text-sm text-papel/75">Saldo em caixa hoje</p>
+          <p className="text-xs text-papel/60 first-letter:uppercase">{hoje}</p>
         </div>
         <p className="font-display mt-2 text-[2.75rem] leading-none font-bold tabular-nums md:text-6xl" style={{ fontVariationSettings: '"SOFT" 0, "opsz" 144' }}>
           {saldo.dados ? dinheiro(saldo.dados.saldo) : "…"}
         </p>
-        <div className="mt-5 grid grid-cols-2 border-t border-dashed border-porcelana/30 pt-4 text-sm">
+        <div className="mt-5 grid grid-cols-2 border-t border-dashed border-papel/30 pt-4 text-sm">
           <div>
-            <p className="text-porcelana/70">Falta receber</p>
+            <p className="text-papel/70">Falta receber</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums">{saldo.dados ? dinheiro(saldo.dados.a_receber) : "…"}</p>
           </div>
-          <div className="border-l border-dashed border-porcelana/30 pl-4">
-            <p className="text-porcelana/70">Falta pagar</p>
+          <div className="border-l border-dashed border-papel/30 pl-4">
+            <p className="text-papel/70">Falta pagar</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums">{saldo.dados ? dinheiro(saldo.dados.a_pagar) : "…"}</p>
           </div>
         </div>
@@ -99,12 +99,12 @@ export default function Inicio() {
           href="/boletos"
           className="mt-4 flex items-center gap-3 rounded-xl border border-ambar/40 bg-ambar-claro px-4 py-3 text-sm text-ambar-texto hover:border-ambar"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white font-bold" aria-hidden>
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-superficie font-bold" aria-hidden>
             !
           </span>
           <span className="flex-1">
             {vencidos.length > 0 && (
-              <span className="block font-semibold text-rose-800">
+              <span className="block font-semibold text-erro">
                 {vencidos.length === 1 ? "1 boleto vencido" : `${vencidos.length} boletos vencidos`}: {dinheiro(total(vencidos))}
               </span>
             )}
@@ -136,22 +136,22 @@ export default function Inicio() {
       </section>
 
       <section className="mt-3 grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-linha bg-white p-4">
+        <div className="rounded-xl border border-linha bg-superficie p-4">
           <h3 className="mb-3 font-semibold">De onde veio o dinheiro</h3>
           <BarrasCategoria itens={porCategoria("entrada")} cor="entrada" />
         </div>
-        <div className="rounded-xl border border-linha bg-white p-4">
+        <div className="rounded-xl border border-linha bg-superficie p-4">
           <h3 className="mb-3 font-semibold">Para onde foi o dinheiro</h3>
           <BarrasCategoria itens={porCategoria("saida")} cor="saida" />
         </div>
       </section>
 
-      <section className="mt-3 rounded-xl border border-linha bg-white p-4">
+      <section className="mt-3 rounded-xl border border-linha bg-superficie p-4">
         <h3 className="mb-3 font-semibold">Últimos 6 meses</h3>
         {historico.dados && <GraficoMensal dados={historico.dados} />}
       </section>
 
-      <section className="mt-3 rounded-xl border border-linha bg-white">
+      <section className="mt-3 rounded-xl border border-linha bg-superficie">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h3 className="font-semibold">Lançamentos recentes do mês</h3>
           <Link href="/lancamentos" className="text-sm text-tinta-suave underline underline-offset-2">
@@ -177,7 +177,7 @@ export default function Inicio() {
 
 function Cartao({ titulo, valor, extra, cor }: { titulo: string; valor: number; extra: string; cor: string }) {
   return (
-    <div className="rounded-xl border border-linha bg-white p-4">
+    <div className="rounded-xl border border-linha bg-superficie p-4">
       <p className="text-sm text-tinta-suave">{titulo}</p>
       <p className={`font-display mt-1 text-[1.75rem] font-semibold tabular-nums ${cor}`}>{dinheiro(valor)}</p>
       {extra && <p className="mt-1 text-xs text-tinta-suave/80">{extra}</p>}

@@ -66,7 +66,7 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
   if (inicial?.boleto_id) {
     return (
       <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>
-        <div onClick={(e) => e.stopPropagation()} className="folha w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl">
+        <div onClick={(e) => e.stopPropagation()} className="folha w-full max-w-md rounded-t-2xl bg-superficie p-5 shadow-xl md:rounded-2xl">
           <h2 className="text-lg font-semibold">Este lançamento vem de um boleto</h2>
           <p className="mt-2 text-sm text-tinta-suave">
             {inicial.descricao}. Ele é atualizado sozinho a partir do boleto. Para editar, marcar como pago ou excluir, use a aba Boletos.
@@ -75,7 +75,7 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
             <button onClick={onFechar} className="flex-1 rounded-lg border border-linha py-3 font-medium">
               Fechar
             </button>
-            <Link href="/boletos" className="flex-1 rounded-lg bg-tinta py-3 text-center font-semibold text-white">
+            <Link href="/boletos" className="flex-1 rounded-lg bg-tinta py-3 text-center font-semibold text-porcelana">
               Abrir Boletos
             </Link>
           </div>
@@ -84,14 +84,14 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
     );
   }
 
-  const campo = "w-full rounded-lg border border-linha bg-white px-3 py-2.5 focus:border-tinta focus:outline-none";
+  const campo = "w-full rounded-lg border border-linha bg-superficie px-3 py-2.5 focus:border-tinta focus:outline-none";
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>
       <form
         onSubmit={enviar}
         onClick={(e) => e.stopPropagation()}
-        className="folha max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="folha max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-superficie p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{inicial ? "Editar lançamento" : "Novo lançamento"}</h2>
@@ -110,7 +110,7 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
                 setCategoriaId("");
               }}
               className={`rounded-lg py-2 font-medium ${
-                tipo === t ? (t === "entrada" ? "bg-jade text-white" : "bg-ambar-texto text-white") : "text-tinta-suave"
+                tipo === t ? (t === "entrada" ? "bg-jade text-white" : "bg-[#8a560c] text-white") : "text-tinta-suave"
               }`}
             >
               {t === "entrada" ? "↑ Entrada" : "↓ Saída"}
@@ -188,7 +188,7 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
                 <label
                   key={s}
                   className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${
-                    status === s ? "border-tinta bg-tinta text-white" : "border-linha"
+                    status === s ? "border-tinta bg-tinta text-porcelana" : "border-linha"
                   }`}
                 >
                   <input type="radio" name="status" className="sr-only" checked={status === s} onChange={() => setStatus(s)} />
@@ -199,18 +199,18 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
           </fieldset>
         </div>
 
-        {erro && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{erro}</p>}
+        {erro && <p className="mt-3 rounded-lg bg-erro-claro px-3 py-2 text-sm text-erro">{erro}</p>}
 
         <div className="mt-5 flex gap-2">
           {inicial && (
-            <button type="button" onClick={excluir} disabled={salvando} className="rounded-lg border border-rose-300 px-4 py-3 text-rose-700">
+            <button type="button" onClick={excluir} disabled={salvando} className="rounded-lg border border-erro/40 px-4 py-3 text-erro">
               Excluir
             </button>
           )}
           <button
             type="submit"
             disabled={salvando}
-            className="flex-1 rounded-lg bg-tinta py-3 font-semibold text-white disabled:opacity-60"
+            className="flex-1 rounded-lg bg-tinta py-3 font-semibold text-porcelana disabled:opacity-60"
           >
             {salvando ? "Salvando…" : "Salvar"}
           </button>

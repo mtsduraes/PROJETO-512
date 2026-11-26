@@ -43,7 +43,7 @@ export default function Lancamentos() {
     return { entradas, saidas };
   }, [filtrados]);
 
-  const filtro = "rounded-lg border border-linha bg-white px-3 py-2 text-sm";
+  const filtro = "rounded-lg border border-linha bg-superficie px-3 py-2 text-sm";
 
   return (
     <AppShell>
@@ -83,17 +83,17 @@ export default function Lancamentos() {
         <button
           onClick={() => exportarCSV(filtrados, cats, mes)}
           disabled={filtrados.length === 0}
-          className="rounded-lg border border-linha bg-white px-3 py-2 font-medium hover:bg-porcelana disabled:opacity-50"
+          className="rounded-lg border border-linha bg-superficie px-3 py-2 font-medium hover:bg-porcelana disabled:opacity-50"
         >
           ⬇ Baixar planilha
         </button>
       </div>
 
       {(lancs.erro || categorias.erro) && (
-        <p className="mb-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">Erro ao carregar: {lancs.erro || categorias.erro}</p>
+        <p className="mb-3 rounded-lg bg-erro-claro p-3 text-sm text-erro">Erro ao carregar: {lancs.erro || categorias.erro}</p>
       )}
 
-      <div className="rounded-xl border border-linha bg-white">
+      <div className="rounded-xl border border-linha bg-superficie">
         {lancs.dados === null ? (
           <p className="p-4 text-sm text-tinta-suave/80">Carregando…</p>
         ) : filtrados.length === 0 ? (

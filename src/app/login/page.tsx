@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { modoDemo, supabase } from "@/lib/supabase";
 import { Marca } from "@/components/AppShell";
+import { BotaoTema } from "@/components/BotaoTema";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,13 +26,16 @@ export default function Login() {
 
   return (
     <div className="grid min-h-dvh place-items-center px-4">
-      <div className="w-full max-w-sm rounded-xl border border-linha bg-white p-6 shadow-sm">
-        <h1><Marca /></h1>
+      <div className="w-full max-w-sm rounded-xl border border-linha bg-superficie p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-2">
+          <h1><Marca /></h1>
+          <BotaoTema />
+        </div>
         <p className="mt-3 text-sm text-tinta-suave">Entre com o e-mail e a senha que você recebeu.</p>
         {modoDemo ? (
           <div className="mt-4 space-y-3 text-sm text-tinta-suave">
             <p>O painel está em modo demonstração (o banco de dados ainda não foi configurado), então não precisa de login.</p>
-            <Link href="/" className="block rounded-lg bg-tinta py-3 text-center font-semibold text-white">
+            <Link href="/" className="block rounded-lg bg-tinta py-3 text-center font-semibold text-porcelana">
               Abrir o painel
             </Link>
           </div>
@@ -59,8 +63,8 @@ export default function Login() {
                 className="w-full rounded-lg border border-linha px-3 py-2.5"
               />
             </label>
-            {erro && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{erro}</p>}
-            <button disabled={entrando} className="w-full rounded-lg bg-tinta py-3 font-semibold text-white disabled:opacity-60">
+            {erro && <p className="rounded-lg bg-erro-claro px-3 py-2 text-sm text-erro">{erro}</p>}
+            <button disabled={entrando} className="w-full rounded-lg bg-tinta py-3 font-semibold text-porcelana disabled:opacity-60">
               {entrando ? "Entrando…" : "Entrar"}
             </button>
             <p className="text-center text-xs text-tinta-suave/80">Esqueceu a senha? Fale com quem cuida do painel para criar uma nova.</p>

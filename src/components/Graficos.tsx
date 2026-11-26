@@ -82,7 +82,7 @@ export function GraficoMensal({ dados }: { dados: ResumoMes[] }) {
           </div>
           {ativo !== null && (
             <div
-              className="pointer-events-none absolute top-0 z-20 w-48 -translate-x-1/2 rounded-lg border border-linha bg-white p-3 text-sm shadow-lg"
+              className="pointer-events-none absolute top-0 z-20 w-48 -translate-x-1/2 rounded-lg border border-linha bg-superficie p-3 text-sm shadow-lg"
               style={{ left: `clamp(6rem, ${((ativo + 0.5) / dados.length) * 100}%, calc(100% - 6rem))` }}
             >
               <div className="mb-1 font-medium">{mesLongo(dados[ativo].mes)}</div>

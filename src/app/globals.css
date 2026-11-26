@@ -10,22 +10,66 @@
 */
 :root {
   color-scheme: light;
+  --porcelana: #eef0ec;
+  --superficie: #ffffff;
+  --linha: #dde1db;
+  --tinta: #1a1a1a;
+  --tinta-suave: #4f5752;
+  --floresta: #151515;
+  --papel: #f2f3ef;
+  --jade: #1f8a70;
+  --jade-texto: #136650;
+  --jade-claro: #e2f1ec;
+  --ambar: #d08a1e;
+  --ambar-texto: #8a560c;
+  --ambar-claro: #f8ecd7;
+  --erro: #b4233f;
+  --erro-claro: #fdecef;
+  /* Gráficos: par validado para daltonismo em cada tema */
+  --entrada: #1f8a70;
+  --saida: #d08a1e;
 }
 
-@theme {
-  --color-porcelana: #eef0ec;
-  --color-linha: #dde1db;
-  --color-tinta: #1a1a1a;
-  --color-tinta-suave: #4f5752;
-  --color-floresta: #151515;
-  --color-jade: #1f8a70;
-  --color-jade-texto: #136650;
-  --color-jade-claro: #e2f1ec;
-  --color-ambar: #d08a1e;
-  --color-ambar-texto: #8a560c;
-  --color-ambar-claro: #f8ecd7;
-  --color-entrada: #1f8a70;
-  --color-saida: #d08a1e;
+/* Tema escuro: mesmos tons da marca, ajustados para fundo escuro */
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --porcelana: #111413;
+  --superficie: #1b201d;
+  --linha: #2e3531;
+  --tinta: #eceee9;
+  --tinta-suave: #a7b0aa;
+  --floresta: #000000;
+  --papel: #f2f3ef;
+  --jade: #1f8a70;
+  --jade-texto: #57c9a5;
+  --jade-claro: #16332a;
+  --ambar: #c98a12;
+  --ambar-texto: #e6ad55;
+  --ambar-claro: #33270f;
+  --erro: #f08497;
+  --erro-claro: #3a1a21;
+  --entrada: #23a383;
+  --saida: #c98a12;
+}
+
+@theme inline {
+  --color-porcelana: var(--porcelana);
+  --color-superficie: var(--superficie);
+  --color-linha: var(--linha);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-floresta: var(--floresta);
+  --color-papel: var(--papel);
+  --color-jade: var(--jade);
+  --color-jade-texto: var(--jade-texto);
+  --color-jade-claro: var(--jade-claro);
+  --color-ambar: var(--ambar);
+  --color-ambar-texto: var(--ambar-texto);
+  --color-ambar-claro: var(--ambar-claro);
+  --color-erro: var(--erro);
+  --color-erro-claro: var(--erro-claro);
+  --color-entrada: var(--entrada);
+  --color-saida: var(--saida);
 }
 
 @theme inline {

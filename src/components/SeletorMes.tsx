@@ -7,7 +7,7 @@ export function SeletorMes({ mes, onChange }: { mes: string; onChange: (m: strin
     <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(somarMes(mes, -1))}
-        className="grid size-10 place-items-center rounded-full border border-linha bg-white text-lg hover:bg-porcelana"
+        className="grid size-10 place-items-center rounded-full border border-linha bg-superficie text-lg hover:bg-porcelana"
         aria-label="Mês anterior"
       >
         ‹
@@ -15,7 +15,7 @@ export function SeletorMes({ mes, onChange }: { mes: string; onChange: (m: strin
       <span className="min-w-40 text-center font-medium">{mesLongo(mes)}</span>
       <button
         onClick={() => onChange(somarMes(mes, 1))}
-        className="grid size-10 place-items-center rounded-full border border-linha bg-white text-lg hover:bg-porcelana"
+        className="grid size-10 place-items-center rounded-full border border-linha bg-superficie text-lg hover:bg-porcelana"
         aria-label="Próximo mês"
       >
         ›

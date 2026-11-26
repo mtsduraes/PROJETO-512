@@ -11,7 +11,7 @@ import { GRUPOS, grupoDo, textoPrazo, type Grupo } from "@/lib/prazos";
 import type { Boleto, Categoria } from "@/lib/types";
 
 const ESTILO_GRUPO: Record<Grupo, { faixa: string; selo: string; icone: string }> = {
-  vencido: { faixa: "bg-rose-700", selo: "bg-rose-50 text-rose-800", icone: "!" },
+  vencido: { faixa: "bg-erro", selo: "bg-erro-claro text-erro", icone: "!" },
   hoje: { faixa: "bg-ambar", selo: "bg-ambar-claro text-ambar-texto", icone: "●" },
   semana: { faixa: "bg-ambar/50", selo: "bg-porcelana text-tinta-suave", icone: "○" },
   depois: { faixa: "bg-linha", selo: "bg-porcelana text-tinta-suave", icone: "○" },
@@ -87,7 +87,7 @@ export default function Boletos() {
         </div>
         <button
           onClick={() => setForm({ aberto: true, item: null })}
-          className="hidden items-center gap-2 rounded-full bg-jade px-5 py-2.5 font-semibold text-white hover:bg-jade-texto md:flex"
+          className="hidden items-center gap-2 rounded-full bg-jade px-5 py-2.5 font-semibold text-white hover:brightness-110 md:flex"
         >
           <span className="text-lg leading-none">+</span> Novo boleto
         </button>
@@ -95,12 +95,12 @@ export default function Boletos() {
 
       {/* Resumo */}
       <section className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-        <Resumo titulo="Vencidos" valor={soma(["vencido"])} qtd={conta(["vencido"])} destaque={conta(["vencido"]) > 0 ? "text-rose-700" : ""} />
+        <Resumo titulo="Vencidos" valor={soma(["vencido"])} qtd={conta(["vencido"])} destaque={conta(["vencido"]) > 0 ? "text-erro" : ""} />
         <Resumo titulo="Até 7 dias" valor={soma(["hoje", "semana"])} qtd={conta(["hoje", "semana"])} destaque={conta(["hoje"]) > 0 ? "text-ambar-texto" : ""} />
         <Resumo titulo="Total a pagar" valor={soma(["vencido", "hoje", "semana", "depois"])} qtd={conta(["vencido", "hoje", "semana", "depois"])} destaque="" />
       </section>
 
-      <div className="mb-4 inline-grid grid-cols-2 gap-1 rounded-full border border-linha bg-white p-1 text-sm" role="tablist">
+      <div className="mb-4 inline-grid grid-cols-2 gap-1 rounded-full border border-linha bg-superficie p-1 text-sm" role="tablist">
         {(["a_pagar", "pago"] as const).map((a) => (
           <button
             key={a}
@@ -115,7 +115,7 @@ export default function Boletos() {
       </div>
 
       {(boletos.erro || categorias.erro) && (
-        <p className="mb-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">
+        <p className="mb-3 rounded-lg bg-erro-claro p-3 text-sm text-erro">
           Erro ao carregar: {boletos.erro || categorias.erro}
           {/boletos/.test(boletos.erro) && " (o banco ainda não tem a parte de boletos: rode o arquivo 02-boletos.sql no Supabase)"}
         </p>
@@ -124,7 +124,7 @@ export default function Boletos() {
       {boletos.dados === null ? (
         <p className="text-sm text-tinta-suave/80">Carregando…</p>
       ) : vazio ? (
-        <div className="rounded-xl border border-dashed border-linha bg-white p-6 text-center text-sm text-tinta-suave">
+        <div className="rounded-xl border border-dashed border-linha bg-superficie p-6 text-center text-sm text-tinta-suave">
           {aba === "pago" ? "Nenhum boleto pago ainda." : "Nenhum boleto para pagar. Cadastre o primeiro no botão abaixo."}
         </div>
       ) : (
@@ -162,7 +162,7 @@ export default function Boletos() {
 
       <button
         onClick={() => setForm({ aberto: true, item: null })}
-        className="fixed right-4 bottom-[5.5rem] z-30 flex items-center md:hidden gap-2 rounded-full bg-jade px-5 py-3.5 font-semibold text-white shadow-[0_6px_20px_-6px_rgba(19,102,80,.6)] hover:bg-jade-texto md:bottom-8"
+        className="fixed right-4 bottom-[5.5rem] z-30 flex items-center md:hidden gap-2 rounded-full bg-jade px-5 py-3.5 font-semibold text-white shadow-[0_6px_20px_-6px_rgba(19,102,80,.6)] hover:brightness-110 md:bottom-8"
       >
         <span className="text-xl leading-none">+</span> Novo boleto
       </button>
@@ -203,7 +203,7 @@ export default function Boletos() {
 
 function Resumo({ titulo, valor, qtd, destaque }: { titulo: string; valor: number; qtd: number; destaque: string }) {
   return (
-    <div className="min-w-0 rounded-xl border border-linha bg-white p-2.5 sm:p-4">
+    <div className="min-w-0 rounded-xl border border-linha bg-superficie p-2.5 sm:p-4">
       <p className="text-xs text-tinta-suave sm:text-sm">{titulo}</p>
       <p className={`font-display mt-0.5 text-[0.95rem] leading-tight font-semibold tabular-nums min-[400px]:text-lg sm:text-2xl ${destaque}`}>{dinheiro(valor)}</p>
       <p className="text-xs text-tinta-suave/80">{qtd === 1 ? "1 boleto" : `${qtd} boletos`}</p>
@@ -228,7 +228,7 @@ function ItemBoleto({ b, grupo, categorias, hoje, onEditar, onCopiar, onAnexo, o
   const cat = categorias.find((c) => c.id === b.categoria_id);
   const botao = "rounded-lg border border-linha px-3 py-2 text-sm font-medium hover:bg-porcelana";
   return (
-    <li className="relative overflow-hidden rounded-xl border border-linha bg-white">
+    <li className="relative overflow-hidden rounded-xl border border-linha bg-superficie">
       <span className={`absolute inset-y-0 left-0 w-1.5 ${estilo.faixa}`} aria-hidden />
       <div className="p-4 pl-5">
         <button onClick={onEditar} className="flex w-full items-start justify-between gap-3 text-left">
@@ -260,7 +260,7 @@ function ItemBoleto({ b, grupo, categorias, hoje, onEditar, onCopiar, onAnexo, o
                   Ver boleto
                 </button>
               )}
-              <button onClick={onPagar} className="ml-auto rounded-lg bg-jade px-4 py-2 text-sm font-semibold text-white hover:bg-jade-texto">
+              <button onClick={onPagar} className="ml-auto rounded-lg bg-jade px-4 py-2 text-sm font-semibold text-white hover:brightness-110">
                 Marcar como pago
               </button>
             </>
@@ -300,7 +300,7 @@ function DialogoPagar({ boleto, onFechar, onPago }: { boleto: Boleto; onFechar: 
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>
-      <div onClick={(e) => e.stopPropagation()} className="folha w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl">
+      <div onClick={(e) => e.stopPropagation()} className="folha w-full max-w-sm rounded-t-2xl bg-superficie p-5 shadow-xl md:rounded-2xl">
         <h2 className="text-lg font-semibold">Marcar como pago</h2>
         <p className="mt-1 text-sm text-tinta-suave">
           {boleto.fornecedor}: <strong className="text-tinta">{dinheiro(boleto.valor)}</strong>. Ele vai entrar como saída paga no caixa nesta data.
@@ -309,7 +309,7 @@ function DialogoPagar({ boleto, onFechar, onPago }: { boleto: Boleto; onFechar: 
           <span className="mb-1 block text-sm text-tinta-suave">Data do pagamento</span>
           <input type="date" value={data} onChange={(e) => setData(e.target.value)} className="w-full rounded-lg border border-linha px-3 py-2.5" />
         </label>
-        {erro && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{erro}</p>}
+        {erro && <p className="mt-3 rounded-lg bg-erro-claro px-3 py-2 text-sm text-erro">{erro}</p>}
         <div className="mt-5 flex gap-2">
           <button onClick={onFechar} className="flex-1 rounded-lg border border-linha py-3 font-medium">
             Cancelar
