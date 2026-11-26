@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/*
+  Identidade visual baseada na 512 Gastronomia e Eventos (preto do logo, verde-sálvia do espaço, madeira)
+  - porcelana: fundo levemente esverdeado, como louça de mesa posta
+  - tinta: verde-escuro quase preto, para textos e botões
+  - jade: entradas (dinheiro que chega)
+  - âmbar: saídas (dinheiro que sai)
+  Par jade/âmbar validado para daltonismo (ΔE 11,7).
+*/
+:root {
+  color-scheme: light;
+}
+
+@theme {
+  --color-porcelana: #eef0ec;
+  --color-linha: #dde1db;
+  --color-tinta: #1a1a1a;
+  --color-tinta-suave: #4f5752;
+  --color-floresta: #151515;
+  --color-jade: #1f8a70;
+  --color-jade-texto: #136650;
+  --color-jade-claro: #e2f1ec;
+  --color-ambar: #d08a1e;
+  --color-ambar-texto: #8a560c;
+  --color-ambar-claro: #f8ecd7;
+  --color-entrada: #1f8a70;
+  --color-saida: #d08a1e;
+}
+
+@theme inline {
+  --font-sans: var(--font-figtree);
+  --font-display: var(--font-fraunces);
+}
+
+body {
+  background: var(--color-porcelana);
+  color: var(--color-tinta);
+}
+
+input, select, button, textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-jade);
+  outline-offset: 2px;
+}
+
+/* Borda picotada da "comanda" do saldo */
+.comanda {
+  --dente: 9px;
+  mask:
+    radial-gradient(circle var(--dente) at 50% calc(100% + var(--dente) / 2), #0000 98%, #000) 50% / calc(var(--dente) * 2.4) 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .surgir {
+    animation: surgir 0.45s ease-out both;
+  }
+  @keyframes surgir {
+    from { opacity: 0; transform: translateY(8px); }
+  }
+  .folha {
+    animation: folha 0.25s ease-out both;
+  }
+  @keyframes folha {
+    from { transform: translateY(24px); opacity: 0.6; }
+  }
+}
