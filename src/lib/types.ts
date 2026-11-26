@@ -26,9 +26,11 @@ export interface Lancamento {
   forma_pagamento: FormaPagamento;
   status: Status;
   boleto_id?: string | null;
+  evento_id?: string | null;
+  evento_restante?: boolean;
 }
 
-export type NovoLancamento = Omit<Lancamento, "id" | "boleto_id">;
+export type NovoLancamento = Omit<Lancamento, "id" | "boleto_id" | "evento_id" | "evento_restante"> & { evento_id?: string | null };
 
 export interface ResumoSaldo {
   saldo: number;
@@ -117,7 +119,49 @@ export interface MovimentoEstoque {
   data: string;
   lancar_no_caixa: boolean;
   lancamento_id: string | null;
+  evento_id?: string | null;
   criado_em: string;
 }
 
 export type NovoMovimento = Omit<MovimentoEstoque, "id" | "lancamento_id" | "criado_em">;
+
+export const TIPOS_EVENTO = ["Casamento", "Aniversário", "Corporativo", "Buffet", "Encomenda", "Outro"] as const;
+export type TipoEvento = (typeof TIPOS_EVENTO)[number];
+
+export type StatusEvento = "orcamento" | "confirmado" | "realizado" | "cancelado";
+
+export const STATUS_EVENTO: { valor: StatusEvento; rotulo: string }[] = [
+  { valor: "orcamento", rotulo: "Orçamento" },
+  { valor: "confirmado", rotulo: "Confirmado" },
+  { valor: "realizado", rotulo: "Realizado" },
+  { valor: "cancelado", rotulo: "Cancelado" },
+];
+
+export interface Evento {
+  id: string;
+  cliente: string;
+  titulo: string;
+  tipo: TipoEvento;
+  data: string; // AAAA-MM-DD
+  hora_inicio: string | null; // HH:MM
+  hora_fim: string | null;
+  local: string;
+  convidados: number | null;
+  telefone: string;
+  status: StatusEvento;
+  valor_total: number;
+  observacao: string;
+}
+
+export type NovoEvento = Omit<Evento, "id">;
+
+/** Compromisso vindo do Google Agenda (só leitura). */
+export interface CompromissoGoogle {
+  id: string;
+  titulo: string;
+  inicio: string; // ISO
+  fim: string | null;
+  diaInteiro: boolean;
+  data: string; // AAAA-MM-DD no fuso de São Paulo
+  local: string;
+}

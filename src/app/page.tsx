@@ -9,10 +9,11 @@ import { BotaoNovo } from "@/components/BotaoNovo";
 import { ItemLancamento } from "@/components/ItemLancamento";
 import { GraficoMensal, BarrasCategoria } from "@/components/Graficos";
 import { useDados } from "@/components/useDados";
-import { listarBoletos, listarItens, listarCategorias, listarLancamentos, resumoMensal, resumoSaldo } from "@/lib/dados";
+import { listarBoletos, listarItens, proximosEventos, listarCategorias, listarLancamentos, resumoMensal, resumoSaldo } from "@/lib/dados";
 import { grupoDo } from "@/lib/prazos";
 import { precisaComprar, validadePerto } from "@/lib/estoque";
-import { dinheiro, mesAtual } from "@/lib/format";
+import { dinheiro, hojeISO, mesAtual } from "@/lib/format";
+import { COR_STATUS, horario, rotuloStatus } from "@/lib/agenda";
 import type { Lancamento, Tipo } from "@/lib/types";
 
 export default function Inicio() {
@@ -26,6 +27,7 @@ export default function Inicio() {
   // Se a parte de boletos ainda não existir no banco, o Início continua funcionando sem o aviso.
   const boletos = useDados(() => listarBoletos().catch(() => []), []);
   const estoque = useDados(() => listarItens().catch(() => []), []);
+  const eventos = useDados(() => proximosEventos(7).catch(() => []), []);
 
   const cats = categorias.dados ?? [];
   const lista = useMemo(() => lancs.dados ?? [], [lancs.dados]);
@@ -69,6 +71,9 @@ export default function Inicio() {
 
   const paraComprar = (estoque.dados ?? []).filter(precisaComprar).length;
   const validade = (estoque.dados ?? []).filter((i) => i.ativo && validadePerto(i)).length;
+
+  const hojeIso = hojeISO();
+  const proximos = (eventos.dados ?? []).filter((e) => e.data >= hojeIso && e.status !== "realizado").slice(0, 4);
 
   const erro = categorias.erro || saldo.erro || historico.erro || lancs.erro;
   const resultado = resumo.entradas - resumo.saidas;
@@ -141,6 +146,43 @@ export default function Inicio() {
           <span className="font-medium underline underline-offset-2">Ver</span>
         </Link>
       )}
+
+      {/* Próximos eventos */}
+      <section className="mt-3 rounded-xl border border-linha bg-superficie">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <h3 className="font-semibold">Eventos dos próximos 7 dias</h3>
+          <Link href="/agenda" className="text-sm text-tinta-suave underline underline-offset-2">
+            Abrir agenda
+          </Link>
+        </div>
+        {proximos.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-tinta-suave/80">Nenhum evento marcado para esta semana.</p>
+        ) : (
+          <ul className="divide-y divide-linha/60">
+            {proximos.map((e) => {
+              const [, m, d] = e.data.split("-");
+              const dia = e.data === hojeIso ? "Hoje" : new Date(`${e.data}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+              return (
+                <li key={e.id}>
+                  <Link href={`/agenda?data=${e.data}&evento=${e.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-porcelana/60">
+                    <span className="grid w-12 shrink-0 text-center leading-tight">
+                      <span className="text-[11px] text-tinta-suave first-letter:uppercase">{dia}</span>
+                      <span className="font-display text-lg font-semibold tabular-nums">{d}/{m}</span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{e.titulo}</span>
+                      <span className="block truncate text-sm text-tinta-suave">
+                        {e.cliente} · {horario(e)}
+                      </span>
+                    </span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${COR_STATUS[e.status].selo}`}>{rotuloStatus(e.status)}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {/* Mês */}
       <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-3">

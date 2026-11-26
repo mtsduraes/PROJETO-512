@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useDados } from "@/components/useDados";
-import { excluirMovimento, listarMovimentos, registrarMovimento } from "@/lib/dados";
+import { excluirMovimento, listarMovimentos, proximosEventos, registrarMovimento } from "@/lib/dados";
 import { dataBR, dinheiro, hojeISO, lerValor, quantidade } from "@/lib/format";
 import { estadoDo, qtdComUnidade, rotuloUnidade, textoValidade, validadePerto } from "@/lib/estoque";
 import type { ItemEstoque, MovimentoEstoque, TipoMovimento } from "@/lib/types";
@@ -140,6 +140,8 @@ function FormMovimento({ item, tipo, onSalvo }: { item: ItemEstoque; tipo: TipoM
   const [data, setData] = useState(hojeISO());
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [eventoId, setEventoId] = useState("");
+  const eventos = useDados(() => (tipo === "saida" ? proximosEventos(30).catch(() => []) : Promise.resolve([])), [tipo]);
   const un = rotuloUnidade(item.unidade);
 
   const q = lerValor(qtd);
@@ -162,6 +164,7 @@ function FormMovimento({ item, tipo, onSalvo }: { item: ItemEstoque; tipo: TipoM
         motivo: motivo.trim(),
         data,
         lancar_no_caixa: tipo === "entrada" && !!valorTotal && lancar,
+        evento_id: tipo === "saida" && eventoId ? eventoId : null,
       });
       onSalvo();
     } catch (err) {
@@ -225,6 +228,21 @@ function FormMovimento({ item, tipo, onSalvo }: { item: ItemEstoque; tipo: TipoM
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
           />
+        </label>
+      )}
+
+      {tipo === "saida" && (eventos.dados ?? []).length > 0 && (
+        <label className="block">
+          <span className="mb-1 block text-sm text-tinta-suave">Foi para algum evento? (opcional)</span>
+          <select className={campo} value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
+            <option value="">Não, uso do dia a dia</option>
+            {(eventos.dados ?? []).map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.data.slice(8, 10)}/{ev.data.slice(5, 7)} · {ev.titulo} ({ev.cliente})
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-xs text-tinta-suave">Assim o evento mostra tudo o que foi usado nele e quanto custou.</span>
         </label>
       )}
 

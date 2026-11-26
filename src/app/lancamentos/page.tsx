@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { SeletorMes } from "@/components/SeletorMes";
 import { FormLancamento } from "@/components/FormLancamento";
@@ -48,7 +49,12 @@ export default function Lancamentos() {
   return (
     <AppShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Lançamentos</h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-xl font-semibold">Lançamentos</h1>
+          <Link href="/categorias" className="text-sm text-jade-texto underline-offset-2 hover:underline md:hidden">
+            Categorias
+          </Link>
+        </div>
         <SeletorMes mes={mes} onChange={setMes} />
       </div>
 

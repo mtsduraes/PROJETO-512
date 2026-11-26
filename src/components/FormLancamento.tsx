@@ -63,6 +63,30 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
     }
   }
 
+  if (inicial?.evento_restante && inicial.evento_id) {
+    return (
+      <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>
+        <div onClick={(e) => e.stopPropagation()} className="folha w-full max-w-md rounded-t-2xl bg-superficie p-5 shadow-xl md:rounded-2xl">
+          <h2 className="text-lg font-semibold">Este valor vem de um evento da Agenda</h2>
+          <p className="mt-2 text-sm text-tinta-suave">
+            {inicial.descricao}. É o que ainda falta o cliente pagar, e ele se atualiza sozinho. Para registrar um pagamento ou mudar o valor fechado, abra o evento na Agenda.
+          </p>
+          <div className="mt-5 flex gap-2">
+            <button onClick={onFechar} className="flex-1 rounded-lg border border-linha py-3 font-medium">
+              Fechar
+            </button>
+            <Link
+              href={`/agenda?data=${inicial.data}&evento=${inicial.evento_id}`}
+              className="flex-1 rounded-lg bg-tinta py-3 text-center font-semibold text-porcelana"
+            >
+              Abrir na Agenda
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (inicial?.boleto_id) {
     return (
       <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>

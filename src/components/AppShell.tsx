@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 import { modoDemo } from "@/lib/supabase";
 import { BotaoTema } from "./BotaoTema";
 
-function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "estoque" | "categorias" }) {
+function Icone({ nome }: { nome: "inicio" | "lancamentos" | "agenda" | "boletos" | "estoque" | "categorias" }) {
   const comum = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
     <svg viewBox="0 0 24 24" className="size-6" aria-hidden {...comum}>
@@ -19,6 +19,13 @@ function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "estoque
         <>
           <rect x="5" y="3.5" width="14" height="17" rx="2" />
           <path d="M9 8.5h6M9 12h6M9 15.5h3.5" />
+        </>
+      )}
+      {nome === "agenda" && (
+        <>
+          <rect x="4" y="5" width="16" height="15.5" rx="2" />
+          <path d="M4 10h16M8.5 3v4M15.5 3v4" />
+          <circle cx="12" cy="15" r="1.3" />
         </>
       )}
       {nome === "boletos" && (
@@ -46,10 +53,14 @@ function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "estoque
 const ABAS = [
   { href: "/", rotulo: "Início", icone: "inicio" },
   { href: "/lancamentos", rotulo: "Lançamentos", icone: "lancamentos" },
+  { href: "/agenda", rotulo: "Agenda", icone: "agenda" },
   { href: "/boletos", rotulo: "Boletos", icone: "boletos" },
   { href: "/estoque", rotulo: "Estoque", icone: "estoque" },
   { href: "/categorias", rotulo: "Categorias", icone: "categorias" },
 ] as const;
+
+// No celular cabem 5 abas: Categorias fica no topo da tela de Lançamentos.
+const ABAS_CELULAR = ABAS.filter((a) => a.href !== "/categorias");
 
 export function Marca() {
   return (
@@ -117,7 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-label="Principal"
         className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-linha bg-superficie pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        {ABAS.map((a) => {
+        {ABAS_CELULAR.map((a) => {
           const ativa = pathname === a.href;
           return (
             <Link

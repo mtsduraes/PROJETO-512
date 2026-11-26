@@ -8,10 +8,13 @@ import { hojeISO, limitesDoMes, mesAtual, somarMes } from "./format";
 import type {
   Boleto,
   Categoria,
+  CompromissoGoogle,
+  Evento,
   ItemEstoque,
   Lancamento,
   MovimentoEstoque,
   NovoBoleto,
+  NovoEvento,
   NovoItemEstoque,
   NovoLancamento,
   NovoMovimento,
@@ -31,6 +34,7 @@ interface BancoDemo {
   boletos?: Boleto[];
   itens?: ItemEstoque[];
   movimentos?: MovimentoEstoque[];
+  eventos?: Evento[];
 }
 
 function uid() {
@@ -139,6 +143,10 @@ function lerDemo(): BancoDemo {
       estoqueExemplo(b);
       mudou = true;
     }
+    if (!b.eventos) {
+      eventosExemplo(b);
+      mudou = true;
+    }
     if (mudou) salvarDemo(b);
     return b;
   }
@@ -146,6 +154,7 @@ function lerDemo(): BancoDemo {
   const banco: BancoDemo = { categorias, lancamentos: exemplos(categorias) };
   boletosExemplo(banco);
   estoqueExemplo(banco);
+  eventosExemplo(banco);
   salvarDemo(banco);
   return banco;
 }
@@ -198,7 +207,7 @@ export async function listarLancamentos(mes: string): Promise<Lancamento[]> {
   }
   const { data, error } = await supabase()
     .from("lancamentos")
-    .select("id,tipo,valor,data,descricao,categoria_id,forma_pagamento,status,boleto_id")
+    .select("id,tipo,valor,data,descricao,categoria_id,forma_pagamento,status,boleto_id,evento_id,evento_restante")
     .gte("data", de)
     .lte("data", ate)
     .order("data", { ascending: false })
@@ -210,12 +219,15 @@ export async function listarLancamentos(mes: string): Promise<Lancamento[]> {
 export async function salvarLancamento(l: NovoLancamento & { id?: string }): Promise<void> {
   if (modoDemo) {
     const b = lerDemo();
+    const antes = l.id ? b.lancamentos.find((x) => x.id === l.id) : undefined;
     if (l.id) b.lancamentos = b.lancamentos.map((x) => (x.id === l.id ? { ...x, ...l, id: x.id } : x));
     else b.lancamentos.push({ ...l, id: uid() });
+    for (const ev of new Set([antes?.evento_id, l.evento_id])) if (ev) restanteDemo(b, ev);
     salvarDemo(b);
     return;
   }
   const { id, ...campos } = l;
+  if (!campos.evento_id) delete campos.evento_id; // funciona mesmo antes de criar a agenda no banco
   const { error } = id
     ? await supabase().from("lancamentos").update(campos).eq("id", id)
     : await supabase().from("lancamentos").insert(campos);
@@ -225,7 +237,9 @@ export async function salvarLancamento(l: NovoLancamento & { id?: string }): Pro
 export async function excluirLancamento(id: string): Promise<void> {
   if (modoDemo) {
     const b = lerDemo();
+    const ev = b.lancamentos.find((x) => x.id === id)?.evento_id;
     b.lancamentos = b.lancamentos.filter((x) => x.id !== id);
+    if (ev) restanteDemo(b, ev);
     salvarDemo(b);
     return;
   }
@@ -469,7 +483,9 @@ export async function registrarMovimento(m: NovoMovimento): Promise<void> {
     salvarDemo(b);
     return;
   }
-  const { error } = await supabase().from("estoque_movimentos").insert(m);
+  const campos = { ...m };
+  if (!campos.evento_id) delete campos.evento_id; // funciona mesmo antes de criar a agenda no banco
+  const { error } = await supabase().from("estoque_movimentos").insert(campos);
   falhou(error);
 }
 
@@ -489,4 +505,201 @@ export async function excluirMovimento(m: MovimentoEstoque): Promise<void> {
     const r = await supabase().from("lancamentos").delete().eq("id", m.lancamento_id);
     falhou(r.error);
   }
+}
+
+// ---------------------------------------------------------------------
+// Agenda (eventos)
+// ---------------------------------------------------------------------
+const CAMPOS_EVENTO = "id,cliente,titulo,tipo,data,hora_inicio,hora_fim,local,convidados,telefone,status,valor_total,observacao";
+
+const hora = (h: string | null) => (h ? h.slice(0, 5) : null);
+const numEvento = (e: Evento): Evento => ({ ...e, valor_total: Number(e.valor_total), hora_inicio: hora(e.hora_inicio), hora_fim: hora(e.hora_fim) });
+
+function nomeRestante(ev: Evento) {
+  return `Falta receber: ${ev.cliente}${ev.titulo ? " - " + ev.titulo : ""}`;
+}
+
+/** Mesmo cálculo do banco: mantém o lançamento "falta receber" do evento. */
+function restanteDemo(b: BancoDemo, eventoId: string) {
+  const ev = b.eventos?.find((e) => e.id === eventoId);
+  if (!ev) return;
+  const recebido = b.lancamentos.filter((l) => l.evento_id === eventoId && l.tipo === "entrada" && !l.evento_restante).reduce((s, l) => s + l.valor, 0);
+  const falta = Math.round((ev.valor_total - recebido) * 100) / 100;
+  b.lancamentos = b.lancamentos.filter((l) => !(l.evento_id === eventoId && l.evento_restante));
+  if (ev.status === "orcamento" || ev.status === "cancelado" || falta <= 0) return;
+  const nomeCat = ev.tipo === "Buffet" ? "Buffet" : ev.tipo === "Encomenda" ? "Encomendas" : "Eventos";
+  b.lancamentos.push({
+    id: uid(),
+    tipo: "entrada",
+    valor: falta,
+    data: ev.data,
+    descricao: nomeRestante(ev),
+    categoria_id: b.categorias.find((c) => c.tipo === "entrada" && c.nome === nomeCat)?.id ?? null,
+    forma_pagamento: "pix",
+    status: "pendente",
+    evento_id: eventoId,
+    evento_restante: true,
+  });
+}
+
+function eventosExemplo(b: BancoDemo) {
+  b.eventos = [];
+  // tira o "a receber" solto dos exemplos antigos, agora ele vem dos eventos
+  b.lancamentos = b.lancamentos.filter((l) => l.descricao !== "Formatura (a receber)");
+  const dia = (delta: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + delta);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const base = { titulo: "", hora_fim: null, convidados: null, telefone: "", observacao: "", local: "" };
+  const lista: (NovoEvento & { sinal?: number })[] = [
+    { ...base, cliente: "Ana e Pedro", titulo: "Casamento", tipo: "Casamento", data: dia(3), hora_inicio: "19:00", hora_fim: "02:00", local: "Espaço 512", convidados: 150, telefone: "15999990000", status: "confirmado", valor_total: 18500, sinal: 9000, observacao: "Cardápio italiano. 3 convidados veganos." },
+    { ...base, cliente: "Construtora Lima", titulo: "Confraternização de fim de ano", tipo: "Corporativo", data: dia(9), hora_inicio: "12:00", hora_fim: "16:00", local: "Sede da empresa", convidados: 80, status: "confirmado", valor_total: 7200, sinal: 2000 },
+    { ...base, cliente: "Júlia Martins", titulo: "Aniversário de 15 anos", tipo: "Aniversário", data: dia(16), hora_inicio: "20:00", local: "Clube Itapeva", convidados: 120, status: "orcamento", valor_total: 12000 },
+    { ...base, cliente: "Dona Cida", titulo: "100 salgados + bolo", tipo: "Encomenda", data: dia(1), hora_inicio: "10:00", status: "confirmado", valor_total: 380, sinal: 0 },
+    { ...base, cliente: "Marcos Ribeiro", titulo: "Buffet de aniversário", tipo: "Buffet", data: dia(-6), hora_inicio: "18:00", convidados: 40, status: "realizado", valor_total: 3200, sinal: 3200 },
+  ];
+  for (const { sinal, ...n } of lista) {
+    const ev = { ...n, id: uid() };
+    b.eventos.push(ev);
+    if (sinal) {
+      b.lancamentos.push({
+        id: uid(), tipo: "entrada", valor: sinal, data: dia(-12), descricao: `Sinal: ${ev.cliente}`, forma_pagamento: "pix", status: "pago",
+        categoria_id: b.categorias.find((c) => c.tipo === "entrada" && c.nome === (ev.tipo === "Buffet" ? "Buffet" : ev.tipo === "Encomenda" ? "Encomendas" : "Eventos"))?.id ?? null,
+        evento_id: ev.id,
+      });
+    }
+    restanteDemo(b, ev.id);
+  }
+}
+
+export async function listarEventos(de: string, ate: string): Promise<Evento[]> {
+  if (modoDemo) return lerDemo().eventos!.filter((e) => e.data >= de && e.data <= ate).sort((a, b) => (a.data + (a.hora_inicio ?? "")).localeCompare(b.data + (b.hora_inicio ?? "")));
+  const { data, error } = await supabase().from("eventos").select(CAMPOS_EVENTO).gte("data", de).lte("data", ate).order("data").order("hora_inicio", { nullsFirst: true });
+  falhou(error);
+  return (data as Evento[]).map(numEvento);
+}
+
+/** Salva o evento. Se vier um sinal, ele entra no caixa como pagamento recebido. */
+export async function salvarEvento(ev: NovoEvento & { id?: string }, sinal?: { valor: number; data: string; forma: Lancamento["forma_pagamento"] }): Promise<string> {
+  const descSinal = (e: NovoEvento) => `Sinal: ${e.cliente}${e.titulo ? " - " + e.titulo : ""}`;
+  if (modoDemo) {
+    const b = lerDemo();
+    const id = ev.id ?? uid();
+    if (ev.id) b.eventos = b.eventos!.map((x) => (x.id === id ? { ...ev, id } : x));
+    else b.eventos!.push({ ...ev, id });
+    if (sinal && sinal.valor > 0) {
+      const nomeCat = ev.tipo === "Buffet" ? "Buffet" : ev.tipo === "Encomenda" ? "Encomendas" : "Eventos";
+      b.lancamentos.push({
+        id: uid(), tipo: "entrada", valor: sinal.valor, data: sinal.data, descricao: descSinal(ev), forma_pagamento: sinal.forma, status: "pago",
+        categoria_id: b.categorias.find((c) => c.tipo === "entrada" && c.nome === nomeCat)?.id ?? null, evento_id: id,
+      });
+    }
+    restanteDemo(b, id);
+    salvarDemo(b);
+    return id;
+  }
+  const { id, ...campos } = ev;
+  let eventoId = id;
+  if (id) {
+    const { error } = await supabase().from("eventos").update(campos).eq("id", id);
+    falhou(error);
+  } else {
+    const { data, error } = await supabase().from("eventos").insert(campos).select("id").single();
+    falhou(error);
+    eventoId = data!.id as string;
+  }
+  if (sinal && sinal.valor > 0) {
+    const cats = await listarCategorias();
+    const nomeCat = ev.tipo === "Buffet" ? "Buffet" : ev.tipo === "Encomenda" ? "Encomendas" : "Eventos";
+    await salvarLancamento({
+      tipo: "entrada", valor: sinal.valor, data: sinal.data, descricao: descSinal(ev), forma_pagamento: sinal.forma, status: "pago",
+      categoria_id: cats.find((c) => c.tipo === "entrada" && c.nome === nomeCat)?.id ?? null, evento_id: eventoId,
+    });
+  }
+  return eventoId!;
+}
+
+/** Apaga o evento. Os pagamentos e o "falta receber" dele saem do caixa juntos. */
+export async function excluirEvento(id: string): Promise<void> {
+  if (modoDemo) {
+    const b = lerDemo();
+    b.eventos = b.eventos!.filter((e) => e.id !== id);
+    b.lancamentos = b.lancamentos.filter((l) => l.evento_id !== id);
+    b.movimentos = b.movimentos!.map((m) => (m.evento_id === id ? { ...m, evento_id: null } : m));
+    salvarDemo(b);
+    return;
+  }
+  const { error } = await supabase().from("eventos").delete().eq("id", id);
+  falhou(error);
+}
+
+/** Pagamentos já recebidos (ou agendados) e o "falta receber" do evento. */
+export async function lancamentosDoEvento(id: string): Promise<Lancamento[]> {
+  if (modoDemo) return lerDemo().lancamentos.filter((l) => l.evento_id === id).sort((a, b) => a.data.localeCompare(b.data));
+  const { data, error } = await supabase()
+    .from("lancamentos")
+    .select("id,tipo,valor,data,descricao,categoria_id,forma_pagamento,status,boleto_id,evento_id,evento_restante")
+    .eq("evento_id", id)
+    .order("data");
+  falhou(error);
+  return (data ?? []).map((l) => ({ ...l, valor: Number(l.valor) })) as Lancamento[];
+}
+
+/** Saídas do estoque feitas para o evento. */
+export async function estoqueDoEvento(id: string): Promise<{ nome: string; quantidade: number; unidade: string; custo: number }[]> {
+  if (modoDemo) {
+    const b = lerDemo();
+    return b.movimentos!
+      .filter((m) => m.evento_id === id && m.tipo === "saida")
+      .map((m) => {
+        const it = b.itens!.find((i) => i.id === m.item_id);
+        return { nome: it?.nome ?? "?", quantidade: m.quantidade, unidade: it?.unidade ?? "", custo: m.quantidade * (it?.custo_medio ?? 0) };
+      });
+  }
+  const { data, error } = await supabase()
+    .from("estoque_movimentos")
+    .select("quantidade, estoque_itens(nome, unidade, custo_medio)")
+    .eq("evento_id", id)
+    .eq("tipo", "saida");
+  falhou(error);
+  return (data ?? []).map((m) => {
+    const it = (Array.isArray(m.estoque_itens) ? m.estoque_itens[0] : m.estoque_itens) as { nome: string; unidade: string; custo_medio: number } | null;
+    return { nome: it?.nome ?? "?", quantidade: Number(m.quantidade), unidade: it?.unidade ?? "", custo: Number(m.quantidade) * Number(it?.custo_medio ?? 0) };
+  });
+}
+
+/** Compromissos do Google Agenda no período (só aparecem se o link secreto estiver configurado). */
+export async function compromissosGoogle(de: string, ate: string): Promise<{ configurado: boolean; itens: CompromissoGoogle[] }> {
+  if (modoDemo) {
+    const d = (delta: number) => {
+      const x = new Date();
+      x.setDate(x.getDate() + delta);
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    };
+    const itens: CompromissoGoogle[] = [
+      { id: "g1", titulo: "Degustação com noivos (Ana e Pedro)", inicio: `${d(0)}T15:00:00-03:00`, fim: null, diaInteiro: false, data: d(0), local: "" },
+      { id: "g2", titulo: "Dentista", inicio: `${d(2)}T09:30:00-03:00`, fim: null, diaInteiro: false, data: d(2), local: "" },
+      { id: "g3", titulo: "Visita técnica Clube Itapeva", inicio: `${d(5)}T10:00:00-03:00`, fim: null, diaInteiro: false, data: d(5), local: "Clube Itapeva" },
+    ];
+    return { configurado: true, itens: itens.filter((i) => i.data >= de && i.data <= ate) };
+  }
+  const { data } = await supabase().auth.getSession();
+  const token = data.session?.access_token;
+  const r = await fetch(`/api/google-agenda?de=${de}&ate=${ate}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.erro ?? "Não deu para ler o Google Agenda.");
+  return r.json();
+}
+
+/** Eventos dos próximos dias, para listas de escolha (estoque) e para o Início. */
+export async function proximosEventos(dias = 30): Promise<Evento[]> {
+  const hoje = hojeISO();
+  const fim = new Date();
+  fim.setDate(fim.getDate() + dias);
+  const ate = `${fim.getFullYear()}-${String(fim.getMonth() + 1).padStart(2, "0")}-${String(fim.getDate()).padStart(2, "0")}`;
+  const inicio = new Date();
+  inicio.setDate(inicio.getDate() - 7);
+  const de = `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, "0")}-${String(inicio.getDate()).padStart(2, "0")}`;
+  const lista = await listarEventos(dias > 0 ? de : hoje, ate);
+  return lista.filter((e) => e.status !== "cancelado");
 }
