@@ -63,6 +63,27 @@ export function FormLancamento({ categorias, inicial, onFechar, onSalvo }: Props
     }
   }
 
+  if (inicial?.boleto_id) {
+    return (
+      <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center" onClick={onFechar}>
+        <div onClick={(e) => e.stopPropagation()} className="folha w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl">
+          <h2 className="text-lg font-semibold">Este lançamento vem de um boleto</h2>
+          <p className="mt-2 text-sm text-tinta-suave">
+            {inicial.descricao}. Ele é atualizado sozinho a partir do boleto. Para editar, marcar como pago ou excluir, use a aba Boletos.
+          </p>
+          <div className="mt-5 flex gap-2">
+            <button onClick={onFechar} className="flex-1 rounded-lg border border-linha py-3 font-medium">
+              Fechar
+            </button>
+            <Link href="/boletos" className="flex-1 rounded-lg bg-tinta py-3 text-center font-semibold text-white">
+              Abrir Boletos
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const campo = "w-full rounded-lg border border-linha bg-white px-3 py-2.5 focus:border-tinta focus:outline-none";
 
   return (

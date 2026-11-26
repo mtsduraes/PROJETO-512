@@ -4,8 +4,8 @@
  * - Sem configuração, roda em modo demonstração e guarda tudo no navegador.
  */
 import { modoDemo, supabase } from "./supabase";
-import { limitesDoMes, mesAtual, somarMes } from "./format";
-import type { Categoria, Lancamento, NovoLancamento, ResumoMes, ResumoSaldo, Tipo } from "./types";
+import { hojeISO, limitesDoMes, mesAtual, somarMes } from "./format";
+import type { Boleto, Categoria, Lancamento, NovoBoleto, NovoLancamento, ResumoMes, ResumoSaldo, Tipo } from "./types";
 
 // ---------------------------------------------------------------------
 // Modo demonstração (localStorage)
@@ -15,6 +15,7 @@ const CHAVE = "painel-caixa-demo-v1";
 interface BancoDemo {
   categorias: Categoria[];
   lancamentos: Lancamento[];
+  boletos?: Boleto[];
 }
 
 function uid() {
@@ -69,11 +70,60 @@ function exemplos(cats: Categoria[]): Lancamento[] {
   return lista;
 }
 
+function boletosExemplo(b: BancoDemo) {
+  const cat = (nome: string) => b.categorias.find((c) => c.nome === nome)?.id ?? null;
+  const dia = (delta: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + delta);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const base = { linha_digitavel: "", anexo_path: null, observacao: "", pago_em: null, status: "a_pagar" as const };
+  b.boletos = [];
+  const lista: NovoBoleto[] = [
+    { ...base, fornecedor: "Distribuidora de bebidas", descricao: "Pedido do casamento", valor: 1280, vencimento: dia(-2), categoria_id: cat("Bebidas") },
+    { ...base, fornecedor: "Enel", descricao: "Conta de luz", valor: 486.9, vencimento: dia(0), categoria_id: cat("Contas fixas") },
+    { ...base, fornecedor: "Atacadão", descricao: "Compra quinzenal", valor: 2150.35, vencimento: dia(4), categoria_id: cat("Ingredientes") },
+    { ...base, fornecedor: "Locadora de louças", descricao: "Formatura", valor: 900, vencimento: dia(15), categoria_id: cat("Aluguel de material") },
+    { ...base, fornecedor: "Sabesp", descricao: "Água", valor: 212.4, vencimento: dia(-6), categoria_id: cat("Contas fixas"), status: "pago", pago_em: dia(-7) },
+  ];
+  for (const n of lista) {
+    const boleto = { ...n, id: uid() };
+    b.boletos.push(boleto);
+    espelharBoleto(b, boleto);
+  }
+}
+
+/** No modo demonstração, imita o que o banco faz: cada boleto tem um lançamento espelho no caixa. */
+function espelharBoleto(b: BancoDemo, bol: Boleto) {
+  const dados: Lancamento = {
+    id: b.lancamentos.find((l) => l.boleto_id === bol.id)?.id ?? uid(),
+    tipo: "saida",
+    valor: bol.valor,
+    data: bol.status === "pago" ? (bol.pago_em ?? hojeISO()) : bol.vencimento,
+    descricao: `Boleto: ${bol.fornecedor}${bol.descricao ? " - " + bol.descricao : ""}`,
+    categoria_id: bol.categoria_id,
+    forma_pagamento: "boleto",
+    status: bol.status === "pago" ? "pago" : "pendente",
+    boleto_id: bol.id,
+  };
+  const i = b.lancamentos.findIndex((l) => l.boleto_id === bol.id);
+  if (i >= 0) b.lancamentos[i] = dados;
+  else b.lancamentos.push(dados);
+}
+
 function lerDemo(): BancoDemo {
   const bruto = typeof window !== "undefined" ? localStorage.getItem(CHAVE) : null;
-  if (bruto) return JSON.parse(bruto);
+  if (bruto) {
+    const b: BancoDemo = JSON.parse(bruto);
+    if (!b.boletos) {
+      boletosExemplo(b);
+      salvarDemo(b);
+    }
+    return b;
+  }
   const categorias = CATEGORIAS_INICIAIS.map(([nome, tipo]) => ({ id: uid(), nome, tipo, ativa: true }));
-  const banco = { categorias, lancamentos: exemplos(categorias) };
+  const banco: BancoDemo = { categorias, lancamentos: exemplos(categorias) };
+  boletosExemplo(banco);
   salvarDemo(banco);
   return banco;
 }
@@ -126,7 +176,7 @@ export async function listarLancamentos(mes: string): Promise<Lancamento[]> {
   }
   const { data, error } = await supabase()
     .from("lancamentos")
-    .select("id,tipo,valor,data,descricao,categoria_id,forma_pagamento,status")
+    .select("id,tipo,valor,data,descricao,categoria_id,forma_pagamento,status,boleto_id")
     .gte("data", de)
     .lte("data", ate)
     .order("data", { ascending: false })
@@ -138,7 +188,7 @@ export async function listarLancamentos(mes: string): Promise<Lancamento[]> {
 export async function salvarLancamento(l: NovoLancamento & { id?: string }): Promise<void> {
   if (modoDemo) {
     const b = lerDemo();
-    if (l.id) b.lancamentos = b.lancamentos.map((x) => (x.id === l.id ? { ...l, id: x.id } : x));
+    if (l.id) b.lancamentos = b.lancamentos.map((x) => (x.id === l.id ? { ...x, ...l, id: x.id } : x));
     else b.lancamentos.push({ ...l, id: uid() });
     salvarDemo(b);
     return;
@@ -193,4 +243,73 @@ export async function resumoMensal(meses = 6): Promise<ResumoMes[]> {
   const { data, error } = await supabase().rpc("resumo_mensal", { meses });
   falhou(error);
   return (data as ResumoMes[]).map((r) => ({ mes: r.mes, entradas: Number(r.entradas), saidas: Number(r.saidas) }));
+}
+
+// ---------------------------------------------------------------------
+// Boletos
+// ---------------------------------------------------------------------
+const CAMPOS_BOLETO = "id,fornecedor,descricao,valor,vencimento,linha_digitavel,categoria_id,status,pago_em,anexo_path,observacao";
+
+export async function listarBoletos(): Promise<Boleto[]> {
+  if (modoDemo) return [...(lerDemo().boletos ?? [])].sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  const { data, error } = await supabase().from("boletos").select(CAMPOS_BOLETO).order("vencimento");
+  falhou(error);
+  return (data ?? []).map((b) => ({ ...b, valor: Number(b.valor) })) as Boleto[];
+}
+
+/** Envia a foto/PDF do boleto para a pasta privada e devolve o caminho guardado. */
+async function enviarAnexo(arquivo: File): Promise<string> {
+  const extensao = arquivo.name.split(".").pop()?.toLowerCase() || "pdf";
+  const caminho = `${new Date().getFullYear()}/${uid()}.${extensao}`;
+  const { error } = await supabase().storage.from("boletos").upload(caminho, arquivo, { contentType: arquivo.type });
+  falhou(error);
+  return caminho;
+}
+
+export async function salvarBoleto(bol: NovoBoleto & { id?: string }, arquivo?: File | null): Promise<void> {
+  if (modoDemo) {
+    const b = lerDemo();
+    const atual = bol.id ? b.boletos!.find((x) => x.id === bol.id) : undefined;
+    const final: Boleto = { ...bol, id: atual?.id ?? uid(), anexo_path: arquivo ? `demo/${arquivo.name}` : bol.anexo_path };
+    b.boletos = atual ? b.boletos!.map((x) => (x.id === final.id ? final : x)) : [...b.boletos!, final];
+    espelharBoleto(b, final);
+    salvarDemo(b);
+    return;
+  }
+  const { id, ...campos } = bol;
+  if (arquivo) {
+    const antigo = campos.anexo_path;
+    campos.anexo_path = await enviarAnexo(arquivo);
+    if (antigo) await supabase().storage.from("boletos").remove([antigo]);
+  }
+  const { error } = id
+    ? await supabase().from("boletos").update(campos).eq("id", id)
+    : await supabase().from("boletos").insert(campos);
+  falhou(error);
+}
+
+export async function marcarBoletoPago(bol: Boleto, pagoEm: string | null): Promise<void> {
+  await salvarBoleto({ ...bol, status: pagoEm ? "pago" : "a_pagar", pago_em: pagoEm });
+}
+
+export async function excluirBoleto(bol: Boleto): Promise<void> {
+  if (modoDemo) {
+    const b = lerDemo();
+    b.boletos = b.boletos!.filter((x) => x.id !== bol.id);
+    b.lancamentos = b.lancamentos.filter((l) => l.boleto_id !== bol.id);
+    salvarDemo(b);
+    return;
+  }
+  // O lançamento espelho no caixa é apagado junto, pelo próprio banco.
+  const { error } = await supabase().from("boletos").delete().eq("id", bol.id);
+  falhou(error);
+  if (bol.anexo_path) await supabase().storage.from("boletos").remove([bol.anexo_path]);
+}
+
+/** Link temporário (10 minutos) para abrir o anexo. */
+export async function linkDoAnexo(caminho: string): Promise<string | null> {
+  if (modoDemo) return null;
+  const { data, error } = await supabase().storage.from("boletos").createSignedUrl(caminho, 600);
+  falhou(error);
+  return data?.signedUrl ?? null;
 }

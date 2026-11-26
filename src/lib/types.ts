@@ -25,9 +25,10 @@ export interface Lancamento {
   categoria_id: string | null;
   forma_pagamento: FormaPagamento;
   status: Status;
+  boleto_id?: string | null;
 }
 
-export type NovoLancamento = Omit<Lancamento, "id">;
+export type NovoLancamento = Omit<Lancamento, "id" | "boleto_id">;
 
 export interface ResumoSaldo {
   saldo: number;
@@ -54,3 +55,21 @@ export const FORMAS_PAGAMENTO: { valor: FormaPagamento; rotulo: string }[] = [
 export function rotuloForma(f: FormaPagamento) {
   return FORMAS_PAGAMENTO.find((x) => x.valor === f)?.rotulo ?? f;
 }
+
+export type StatusBoleto = "a_pagar" | "pago";
+
+export interface Boleto {
+  id: string;
+  fornecedor: string;
+  descricao: string;
+  valor: number;
+  vencimento: string; // AAAA-MM-DD
+  linha_digitavel: string;
+  categoria_id: string | null;
+  status: StatusBoleto;
+  pago_em: string | null;
+  anexo_path: string | null;
+  observacao: string;
+}
+
+export type NovoBoleto = Omit<Boleto, "id">;

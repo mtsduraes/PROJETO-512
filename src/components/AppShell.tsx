@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthProvider";
 import { modoDemo } from "@/lib/supabase";
 
-function Icone({ nome }: { nome: "inicio" | "lancamentos" | "categorias" }) {
+function Icone({ nome }: { nome: "inicio" | "lancamentos" | "boletos" | "categorias" }) {
   const comum = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
     <svg viewBox="0 0 24 24" className="size-6" aria-hidden {...comum}>
@@ -18,6 +18,12 @@ function Icone({ nome }: { nome: "inicio" | "lancamentos" | "categorias" }) {
         <>
           <rect x="5" y="3.5" width="14" height="17" rx="2" />
           <path d="M9 8.5h6M9 12h6M9 15.5h3.5" />
+        </>
+      )}
+      {nome === "boletos" && (
+        <>
+          <path d="M5 3.5h14v17l-2.3-1.5-2.4 1.5-2.3-1.5-2.3 1.5-2.4-1.5L5 20.5z" />
+          <path d="M8.5 8v5M10.5 8v5M13 8v5M15.5 8v5M8.5 16h7" />
         </>
       )}
       {nome === "categorias" && (
@@ -33,6 +39,7 @@ function Icone({ nome }: { nome: "inicio" | "lancamentos" | "categorias" }) {
 const ABAS = [
   { href: "/", rotulo: "Início", icone: "inicio" },
   { href: "/lancamentos", rotulo: "Lançamentos", icone: "lancamentos" },
+  { href: "/boletos", rotulo: "Boletos", icone: "boletos" },
   { href: "/categorias", rotulo: "Categorias", icone: "categorias" },
 ] as const;
 
@@ -97,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Barra de abas no celular */}
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-3 border-t border-linha bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-linha bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {ABAS.map((a) => {
           const ativa = pathname === a.href;

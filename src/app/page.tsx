@@ -9,7 +9,8 @@ import { BotaoNovo } from "@/components/BotaoNovo";
 import { ItemLancamento } from "@/components/ItemLancamento";
 import { GraficoMensal, BarrasCategoria } from "@/components/Graficos";
 import { useDados } from "@/components/useDados";
-import { listarCategorias, listarLancamentos, resumoMensal, resumoSaldo } from "@/lib/dados";
+import { listarBoletos, listarCategorias, listarLancamentos, resumoMensal, resumoSaldo } from "@/lib/dados";
+import { grupoDo } from "@/lib/prazos";
 import { dinheiro, mesAtual } from "@/lib/format";
 import type { Lancamento, Tipo } from "@/lib/types";
 
@@ -21,6 +22,8 @@ export default function Inicio() {
   const saldo = useDados(resumoSaldo, []);
   const historico = useDados(() => resumoMensal(6), []);
   const lancs = useDados(() => listarLancamentos(mes), [mes]);
+  // Se a parte de boletos ainda não existir no banco, o Início continua funcionando sem o aviso.
+  const boletos = useDados(() => listarBoletos().catch(() => []), []);
 
   const cats = categorias.dados ?? [];
   const lista = useMemo(() => lancs.dados ?? [], [lancs.dados]);
@@ -53,9 +56,15 @@ export default function Inicio() {
     saldo.recarregar();
     historico.recarregar();
     lancs.recarregar();
+    boletos.recarregar();
   }
 
   const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const pendentes = (boletos.dados ?? []).map((b) => ({ b, g: grupoDo(b) }));
+  const vencidos = pendentes.filter((x) => x.g === "vencido");
+  const semana = pendentes.filter((x) => x.g === "hoje" || x.g === "semana");
+  const total = (xs: typeof pendentes) => xs.reduce((s, x) => s + x.b.valor, 0);
+
   const erro = categorias.erro || saldo.erro || historico.erro || lancs.erro;
   const resultado = resumo.entradas - resumo.saidas;
 
@@ -83,6 +92,31 @@ export default function Inicio() {
           </div>
         </div>
       </section>
+
+      {/* Aviso de boletos */}
+      {(vencidos.length > 0 || semana.length > 0) && (
+        <Link
+          href="/boletos"
+          className="mt-4 flex items-center gap-3 rounded-xl border border-ambar/40 bg-ambar-claro px-4 py-3 text-sm text-ambar-texto hover:border-ambar"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white font-bold" aria-hidden>
+            !
+          </span>
+          <span className="flex-1">
+            {vencidos.length > 0 && (
+              <span className="block font-semibold text-rose-800">
+                {vencidos.length === 1 ? "1 boleto vencido" : `${vencidos.length} boletos vencidos`}: {dinheiro(total(vencidos))}
+              </span>
+            )}
+            {semana.length > 0 && (
+              <span className="block">
+                {semana.length === 1 ? "1 boleto vence" : `${semana.length} boletos vencem`} nos próximos 7 dias: {dinheiro(total(semana))}
+              </span>
+            )}
+          </span>
+          <span className="font-medium underline underline-offset-2">Ver</span>
+        </Link>
+      )}
 
       {/* Mês */}
       <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-3">
