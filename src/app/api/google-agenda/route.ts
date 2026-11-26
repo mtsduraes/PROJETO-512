@@ -25,7 +25,7 @@ async function usuarioLogado(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!(await usuarioLogado(req))) return NextResponse.json({ erro: "Entre no painel para ver a agenda." }, { status: 401 });
 
-  const linkAgenda = process.env.GOOGLE_AGENDA_ICAL_URL;
+  const linkAgenda = process.env.GOOGLE_AGENDA_ICAL_URL?.trim().replace(/^["']|["']$/g, "");
   if (!linkAgenda) return NextResponse.json({ configurado: false, itens: [] });
   if (!/^https:\/\//.test(linkAgenda)) return NextResponse.json({ erro: "O link do Google Agenda precisa começar com https://" }, { status: 500 });
 
@@ -40,6 +40,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const resposta = await fetch(linkAgenda, { next: { revalidate: 300 } });
+    if (resposta.status === 404 || resposta.status === 403) {
+      const publico = /\/public\/basic\.ics/.test(linkAgenda);
+      throw new Error(
+        publico
+          ? "o link cadastrado é o endereço PÚBLICO. Use o \"Endereço secreto no formato iCal\" (tem a palavra private no meio)."
+          : "o Google não reconheceu o link. Copie de novo o \"Endereço secreto no formato iCal\" e confira se colou inteiro.",
+      );
+    }
     if (!resposta.ok) throw new Error(`Google respondeu ${resposta.status}`);
     const itens = lerCompromissos(await resposta.text(), inicio, fim);
     return NextResponse.json({ configurado: true, itens });
